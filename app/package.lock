@@ -1,21 +1,28 @@
-sdk: ^2.0.0-alpha.91
+sdk: ^2.0.0-alpha.119
 prefixes:
   certificate_roots: toit-cert-roots
   http: pkg-http
   solar_position: toit-solar-position
+  weather_icons: toit-weather-icons
 packages:
   pkg-http:
-    url: github.com/toitlang/pkg-http
-    name: http
-    version: 2.3.4
-    hash: 39fe52083b4c745cc37420649a48277b45728fd2
+    path: ../../../toitlang/pkg-http
   toit-cert-roots:
     url: github.com/toitware/toit-cert-roots
     name: certificate_roots
     version: 1.6.1
     hash: 55d3be82ed53d8d332338b2de931865cf69fe48b
+  toit-png-tools:
+    url: github.com/toitware/toit-png-tools
+    name: png-tools
+    version: 1.0.0
+    hash: ee472ac9d4333a138206f9d3a817d3c5432d6f87
   toit-solar-position:
     url: github.com/toitware/toit-solar-position
     name: solar_position
     version: 0.0.3
     hash: 82c796ae33d0fc7448f0beb4e485485d093e4e29
+  toit-weather-icons:
+    path: ../../../toitlang/toit-weather-icons
+    prefixes:
+      png-tools: toit-png-tools

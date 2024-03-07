@@ -3,8 +3,9 @@ dependencies:
     url: github.com/toitware/toit-cert-roots
     version: ^1.6.1
   http:
-    url: github.com/toitlang/pkg-http
-    version: ^2.3.4
+    path: ../../../toitlang/pkg-http
   solar_position:
     url: github.com/toitware/toit-solar-position
     version: ^0.0.3
+  weather_icons:
+    path: ../../../toitlang/toit-weather-icons/
