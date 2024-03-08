@@ -1,7 +1,9 @@
-sdk: ^2.0.0-alpha.119
+sdk: ^2.0.0-alpha.121
 prefixes:
   certificate_roots: toit-cert-roots
+  color_tft: toit-color-tft
   http: pkg-http
+  pixel_display: toit-pixel-display
   solar_position: toit-solar-position
   weather_icons: toit-weather-icons
 packages:
@@ -12,6 +14,20 @@ packages:
     name: certificate_roots
     version: 1.6.1
     hash: 55d3be82ed53d8d332338b2de931865cf69fe48b
+  toit-color-tft:
+    url: github.com/toitware/toit-color-tft
+    name: color_tft
+    version: 2.0.0
+    hash: 2ecc8af8a66f2c8a1c672f14bc49ad0be380731a
+    prefixes:
+      pixel_display: toit-pixel-display
+  toit-pixel-display:
+    url: github.com/toitware/toit-pixel-display
+    name: pixel_display
+    version: 2.3.0
+    hash: 4a6f7c4c30152ec3c80b6cbe765133ce9015dab0
+    prefixes:
+      png-tools: toit-png-tools
   toit-png-tools:
     url: github.com/toitware/toit-png-tools
     name: png-tools

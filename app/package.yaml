@@ -2,8 +2,14 @@ dependencies:
   certificate_roots:
     url: github.com/toitware/toit-cert-roots
     version: ^1.6.1
+  color_tft:
+    url: github.com/toitware/toit-color-tft
+    version: ^2.0.0
   http:
     path: ../../../toitlang/pkg-http
+  pixel_display:
+    url: github.com/toitware/toit-pixel-display
+    version: ^2.3.0
   solar_position:
     url: github.com/toitware/toit-solar-position
     version: ^0.0.3
