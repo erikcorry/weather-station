@@ -3,12 +3,23 @@ prefixes:
   certificate_roots: toit-cert-roots
   color_tft: toit-color-tft
   http: pkg-http
-  pixel_display: toit-pixel-display
+  ntp: pkg-ntp
+  pixel_display: ../toitware/toit-pixel-display
+  roboto: toit-font-google-100dpi-roboto
   solar_position: toit-solar-position
   weather_icons: toit-weather-icons
 packages:
+  ../toitware/toit-pixel-display:
+    path: ../../../toitware/toit-pixel-display
+    prefixes:
+      png-tools: toit-png-tools
   pkg-http:
     path: ../../../toitlang/pkg-http
+  pkg-ntp:
+    url: github.com/toitlang/pkg-ntp
+    name: ntp
+    version: 1.0.0
+    hash: 1c3cc4a4819f459393f00efc576f66f838665719
   toit-cert-roots:
     url: github.com/toitware/toit-cert-roots
     name: certificate_roots
@@ -20,14 +31,12 @@ packages:
     version: 2.0.0
     hash: 2ecc8af8a66f2c8a1c672f14bc49ad0be380731a
     prefixes:
-      pixel_display: toit-pixel-display
-  toit-pixel-display:
-    url: github.com/toitware/toit-pixel-display
-    name: pixel_display
-    version: 2.3.0
-    hash: 4a6f7c4c30152ec3c80b6cbe765133ce9015dab0
-    prefixes:
-      png-tools: toit-png-tools
+      pixel_display: ../toitware/toit-pixel-display
+  toit-font-google-100dpi-roboto:
+    url: github.com/toitware/toit-font-google-100dpi-roboto
+    name: roboto
+    version: 1.2.0
+    hash: 73385f548737c998ee675cb9296643676c9f5c9b
   toit-png-tools:
     url: github.com/toitware/toit-png-tools
     name: png-tools

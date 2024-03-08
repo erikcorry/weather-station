@@ -7,9 +7,14 @@ dependencies:
     version: ^2.0.0
   http:
     path: ../../../toitlang/pkg-http
+  ntp:
+    url: github.com/toitlang/pkg-ntp
+    version: ^1.0.0
   pixel_display:
-    url: github.com/toitware/toit-pixel-display
-    version: ^2.3.0
+    path: ../../../toitware/toit-pixel-display/
+  roboto:
+    url: github.com/toitware/toit-font-google-100dpi-roboto
+    version: ^1.2.0
   solar_position:
     url: github.com/toitware/toit-solar-position
     version: ^0.0.3
