@@ -24,7 +24,7 @@ main:
   response/http.Response := client.get
       --host="dmigw.govcloud.dk"
       --path="/v2/metObs/collections/observation/items"
-      --parameters=parameters
+      --query_parameters=parameters
       --headers=headers
   data := json.decode-stream response.body
   sun := solar-position Time.now LONGITUDE LATITUDE
@@ -46,7 +46,7 @@ main:
       wind-direction = properties["value"]
     else if parameter-id == "precip_past1h" or parameter-id == "precip_past10min":
       precipitation = properties["value"]
-    print "Parameter ID: $parameter-id"
+    print "Parameter ID: $parameter-id: $properties["value"]"
   icon := ""
   if cloud-cover:
     if cloud-cover > 99:
