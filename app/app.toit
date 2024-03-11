@@ -19,8 +19,21 @@ import roboto.medium-20 as small
 import .api-key
 import .get-display
 
+// Tranbjerg.
 LONGITUDE ::= 10.1337
 LATITUDE ::= 56.09
+
+// Fremont.
+//LATITUDE := 37.5485
+//LONGITUDE ::= -121.9886
+
+// Honolulu.
+//LATITUDE ::= 21.3069
+//LONGITUDE ::= -157.8583
+
+// Norwegian Antarctic Research Station.
+//LATITUDE ::= -71.9967
+//LONGITUDE ::= 12.4683
 
 main:
   certificate-roots.install-common-trusted-roots
@@ -31,42 +44,52 @@ main:
   display := null
   catch --trace: display = get-display M5-STACK-24-BIT-LANDSCAPE-SETTINGS
 
-  bg := GradientBackground --angle=60 --specifiers=[
-      GradientSpecifier --color=0x6060a0 0,
-      GradientSpecifier --color=0x202040 100,
+  bg := GradientBackground --angle=-30 --specifiers=[
+      GradientSpecifier --color=0x9090e0 0,
+      GradientSpecifier --color=0xf0f0f0 100,
       ]
 
-  temperature-label := Label --x=30 --y=48 --id="temperature-label"
-  weather-icon := Png --x=20 --y=50 --id="weather-icon"
-  weather-description := Label --x=50 --y=160 --id="weather-description"
-  wind-direction-icon := Png --x=200 --y=0 --id="wind-direction"
-  wind-speed := Label --x=200 --y=110 --id="wind-speed"
-  clock := Label --x=200 --y=220 --id="clock"
-  location := Label --x=20 --y=220 --id="location"
 
   elements :=
-      Div --x=0 --y=0 --w=320 --h=240 --background=0x000000 [
-          temperature-label,
-          weather-icon,
-          weather-description,
-          wind-direction-icon,
-          wind-speed,
-          clock,
-          location,
+      Div --x=0 --y=0 --w=320 --h=240 --background=bg [
+          Div.clipping --classes=["button"] --x=10 --y=10 --w=150 --h=70 [
+            Label --x=75 --y=50 --id="temperature-label",
+          ],
+          Png --x=20 --y=100 --id="weather-icon",
+          Label --x=50 --y=210 --id="weather-description",
+          Div.clipping --classes=["button"] --x=180 --y=10 --w=120 --h=120 [
+              Png --x=0 --y=-10 --id="wind-direction",
+              Label --x=60 --y=100 --id="wind-speed",
+          ],
+          Div.clipping --classes=["button"] --x=180 --y=170 --w=120 --h=50 [
+              Label --x=60 --y=40 --id="clock",
+          ],
+          Label --x=220 --y=160 --id="location",
       ]
 
   big-font := Font [big.ASCII, big.LATIN-1-SUPPLEMENT]
   small-font := Font [small.ASCII, small.LATIN-1-SUPPLEMENT]
 
+  temperature-label := elements.get-element-by-id "temperature-label"
+  weather-icon := elements.get-element-by-id "weather-icon"
+  weather-description := elements.get-element-by-id "weather-description"
+  wind-direction-icon := elements.get-element-by-id "wind-direction"
+  wind-speed := elements.get-element-by-id "wind-speed"
+  clock := elements.get-element-by-id "clock"
+  location := elements.get-element-by-id "location"
+
   style := Style
+      --class-map = {
+        "button": Style --background=0xfff8e0 --border=(ShadowRoundedCornerBorder --radius=10),
+      }
       --id-map = {
-        "temperature-label": Style --color=0xffffff --font=big-font,
+        "temperature-label": Style --color=0 --font=big-font --align-center,
         "weather-icon": Style --color=0xffdf80,
         "weather-description": Style --color=0xffdf80 --font=small-font,
-        "wind-direction": Style --color=0xd0d0ff,
-        "wind-speed": Style --color=0xd0d0ff --font=big-font,
-        "clock": Style --color=0xcfffcf --font=big-font,
-        "location": Style --color=0xa0a0a0 --font=small-font,
+        "wind-direction": Style --color=0xc0c0ff,
+        "wind-speed": Style --color=0xc0c0ff --font=big-font --align-center,
+        "clock": Style --color=0x4fcf4f --font=big-font --align-center,
+        "location": Style --color=0x909090 --font=small-font --align-center,
       }
 
   elements.set-styles [style]
@@ -86,21 +109,20 @@ main:
       if wind-direction != weather.wind-direction:
         wind-direction = weather.wind-direction
         wind-direction-icon.png-file = direction-to-icon wind-direction
-      temperature-label.text = "$(round weather.dry-temp)°C"
+      temp := weather.dry-temp
+      temperature-label.text = "$(round temp)°C"
+      r := temp < -10 ? 0 : temp > 20 ? 255 : ((temp.to-int + 10) * 255) / 30
+      g := 0x80
+      b := 255 - r
+      color := (r << 16) + (g << 8) + b
+      temperature-label.color = color
       wind-speed.text = "$(weather.wind-speed.to-int)m/s"
       location.text = weather.name
       weather-description.text = weather.text
     30.repeat: | i |
       now := Time.now.local
       clock.text = "$(%02d now.h):$(%02d now.m)"
-      if display:
-        if i == 0:
-          elements.background = 0
-          display.draw
-          elements.background = bg
-          display.draw
-        else:
-          display.draw
+      if display: display.draw
       sleep --ms=20_000
 
 class Weather:
@@ -143,7 +165,10 @@ get-weather client/http.Client -> Weather:
   print "$text, $(round dry-temp)°C, $(round wind-speed)m/s, $wind-direction°, clouds $cloud-cover%"
 
   time-offset := data["timezone"] / 3600
-  set-timezone "UTC-$time-offset"
+  if time-offset > 0:
+    set-timezone "UTC-$time-offset"
+  else:
+    set-timezone "UTC+$(-time-offset)"
 
   print Time.now.local
 
