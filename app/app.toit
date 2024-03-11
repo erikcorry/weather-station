@@ -16,6 +16,8 @@ import weather-icons.png-112.all show *
 import roboto.black-40 as big
 import roboto.medium-20 as small
 
+import system
+
 import .api-key
 import .get-display
 
@@ -56,7 +58,7 @@ main:
             Label --x=75 --y=50 --id="temperature-label",
           ],
           Png --x=20 --y=100 --id="weather-icon",
-          Label --x=50 --y=210 --id="weather-description",
+          Label --x=50 --y=220 --id="weather-description",
           Div.clipping --classes=["button"] --x=180 --y=10 --w=120 --h=120 [
               Png --x=0 --y=-10 --id="wind-direction",
               Label --x=60 --y=100 --id="wind-speed",
@@ -99,10 +101,11 @@ main:
   code/int? := null
   wind-direction/int := 0
 
+  first := true
   while true:
     catch --trace:
       weather := get-weather client
-      if code != weather.code:
+      if (not first) and code != weather.code:
         code = weather.code
         png-file := weather.icon
         weather-icon.png-file = png-file
@@ -119,11 +122,26 @@ main:
       wind-speed.text = "$(weather.wind-speed.to-int)m/s"
       location.text = weather.name
       weather-description.text = weather.text
-    30.repeat: | i |
-      now := Time.now.local
-      clock.text = "$(%02d now.h):$(%02d now.m)"
-      if display: display.draw
-      sleep --ms=20_000
+    if first:
+      draw display clock
+      first = false
+    else:
+      30.repeat: | i |
+        draw display clock
+        sleep --ms=20_000
+
+draw display/PixelDisplay? clock/Label:
+  now := Time.now.local
+  clock.text = "$(%02d now.h):$(%02d now.m)"
+  if display:
+    before := system.process-stats
+    d := Duration.of:
+      display.draw
+    after := system.process-stats
+    gc := after[system.STATS-INDEX-GC-COUNT] - before[system.STATS-INDEX-GC-COUNT]
+    full-gc := after[system.STATS-INDEX-FULL-GC-COUNT] - before[system.STATS-INDEX-FULL-GC-COUNT]
+    compact := after[system.STATS-INDEX-FULL-COMPACTING-GC-COUNT] - before[system.STATS-INDEX-FULL-COMPACTING-GC-COUNT]
+    //print "Took $d to draw, $gc scavenges, $full-gc full GCs, of those $compact compacting."
 
 class Weather:
   code/int
