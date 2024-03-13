@@ -13,8 +13,9 @@ import http
 import net
 import ntp
 import pixel-display show *
-import pixel-display.png show Png
 import pixel-display.gradient show GradientSpecifier GradientBackground
+import pixel-display.png show Png
+import pixel-display.true-color show get-rgb
 import solar-position show *
 import weather-icons.png-112.all show *
 import roboto.black-40 as big
@@ -29,18 +30,6 @@ import .get-display
 LONGITUDE ::= 10.1337
 LATITUDE ::= 56.09
 
-// Fremont.
-//LATITUDE := 37.5485
-//LONGITUDE ::= -121.9886
-
-// Honolulu.
-//LATITUDE ::= 21.3069
-//LONGITUDE ::= -157.8583
-
-// Norwegian Antarctic Research Station.
-//LATITUDE ::= -71.9967
-//LONGITUDE ::= 12.4683
-
 main:
   certificate-roots.install-common-trusted-roots
   network := net.open
@@ -53,13 +42,13 @@ main:
   bg := GradientBackground --angle=-30 --specifiers=[
       GradientSpecifier --color=0x9090e0 0,
       GradientSpecifier --color=0xf0f0f0 100,
-      ]
+  ]
 
 
-  elements :=
+  ui :=
       Div --x=0 --y=0 --w=320 --h=240 --background=bg [
           Div.clipping --classes=["button"] --x=10 --y=10 --w=150 --h=70 [
-            Label --x=75 --y=50 --id="temperature-label",
+              Label --x=75 --y=50 --id="temperature-label",
           ],
           Png --x=20 --y=100 --id="weather-icon",
           Label --x=50 --y=220 --id="weather-description",
@@ -76,13 +65,13 @@ main:
   big-font := Font [big.ASCII, big.LATIN-1-SUPPLEMENT]
   small-font := Font [small.ASCII, small.LATIN-1-SUPPLEMENT]
 
-  temperature-label := elements.get-element-by-id "temperature-label"
-  weather-icon := elements.get-element-by-id "weather-icon"
-  weather-description := elements.get-element-by-id "weather-description"
-  wind-direction-icon := elements.get-element-by-id "wind-direction"
-  wind-speed := elements.get-element-by-id "wind-speed"
-  clock := elements.get-element-by-id "clock"
-  location := elements.get-element-by-id "location"
+  temperature-label := ui.get-element-by-id "temperature-label"
+  weather-icon := ui.get-element-by-id "weather-icon"
+  weather-description := ui.get-element-by-id "weather-description"
+  wind-direction-icon := ui.get-element-by-id "wind-direction"
+  wind-speed := ui.get-element-by-id "wind-speed"
+  clock := ui.get-element-by-id "clock"
+  location := ui.get-element-by-id "location"
 
   style := Style
       --class-map = {
@@ -98,12 +87,12 @@ main:
         "location": Style --color=0x909090 --font=small-font --align-center,
       }
 
-  elements.set-styles [style]
+  ui.set-styles [style]
 
-  if display: display.add elements
+  if display: display.add ui
 
   code/int? := null
-  wind-direction/int := 0
+  wind-direction/int := -1
 
   first := true
   while true:
@@ -121,7 +110,7 @@ main:
       r := temp < -10 ? 0 : temp > 20 ? 255 : ((temp.to-int + 10) * 255) / 30
       g := 0x80
       b := 255 - r
-      color := (r << 16) + (g << 8) + b
+      color := get-rgb r g b
       temperature-label.color = color
       wind-speed.text = "$(weather.wind-speed.to-int)m/s"
       location.text = weather.name
@@ -157,12 +146,19 @@ class Weather:
   cloud-cover/int
   name/string
 
-  constructor --.code/int --sun/SolarPosition --.text="" --.dry-temp --.wind-speed --.wind-direction --.cloud-cover --.name="":
+  constructor
+      --.code/int
+      --sun/SolarPosition
+      --.text=""
+      --.dry-temp
+      --.wind-speed
+      --.wind-direction
+      --.cloud-cover
+      --.name="":
     icon = code-to-icon code (not sun.night) dry-temp
 
 get-weather client/http.Client -> Weather:
   headers := http.Headers
-  //headers.add "X-Gravitee-Api-Key" API-KEY
   parameters := {
     "lat": LATITUDE,
     "lon": LONGITUDE,
@@ -194,13 +190,21 @@ get-weather client/http.Client -> Weather:
 
   print Time.now.local
 
-  return Weather --code=code --sun=sun --text=text --dry-temp=dry-temp --wind-speed=wind-speed --wind-direction=wind-direction --cloud-cover=cloud-cover --name=data["name"]
+  return Weather
+      --code=code
+      --sun=sun
+      --text=text
+      --dry-temp=dry-temp
+      --wind-speed=wind-speed
+      --wind-direction=wind-direction
+      --cloud-cover=cloud-cover
+      --name=data["name"]
 
 round value/num -> string:
   return (FixedPoint --decimals=1 value).stringify
 
 direction-to-icon angle/int -> ByteArray?:
-  if angle == 0: return null
+  if angle < 0: return null
   if angle < 22: return DIRECTION-UP
   if angle < 67: return DIRECTION-UP-RIGHT
   if angle < 112: return DIRECTION-RIGHT
