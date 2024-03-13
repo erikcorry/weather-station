@@ -19,6 +19,7 @@ import pixel-display.true-color show get-rgb
 import solar-position show *
 import weather-icons.png-112.all show *
 import roboto.black-40 as big
+import roboto.light-40 as medium
 import roboto.medium-20 as small
 
 import system
@@ -44,7 +45,6 @@ main:
       GradientSpecifier --color=0xf0f0f0 100,
   ]
 
-
   ui :=
       Div --x=0 --y=0 --w=320 --h=240 --background=bg [
           Div.clipping --classes=["button"] --x=10 --y=10 --w=150 --h=70 [
@@ -63,6 +63,7 @@ main:
       ]
 
   big-font := Font [big.ASCII, big.LATIN-1-SUPPLEMENT]
+  medium-font := Font [medium.ASCII, medium.LATIN-1-SUPPLEMENT]
   small-font := Font [small.ASCII, small.LATIN-1-SUPPLEMENT]
 
   temperature-label := ui.get-element-by-id "temperature-label"
@@ -73,17 +74,22 @@ main:
   clock := ui.get-element-by-id "clock"
   location := ui.get-element-by-id "location"
 
+  button-background := GradientBackground --angle=-30 --specifiers=[
+      GradientSpecifier --color=0xf0f0f0 0,
+      GradientSpecifier --color=0xa0a0a0 100,
+  ]
+
   style := Style
       --class-map = {
-        "button": Style --background=0xfff8e0 --border=(ShadowRoundedCornerBorder --radius=10),
+        "button": Style --background=button-background --border=(ShadowRoundedCornerBorder --radius=10),
       }
       --id-map = {
-        "temperature-label": Style --color=0 --font=big-font --align-center,
+        "temperature-label": Style --color=0 --font=medium-font --align-center,
         "weather-icon": Style --color=0xffdf80,
         "weather-description": Style --color=0xffdf80 --font=small-font,
         "wind-direction": Style --color=0xc0c0ff,
-        "wind-speed": Style --color=0xc0c0ff --font=big-font --align-center,
-        "clock": Style --color=0x4fcf4f --font=big-font --align-center,
+        "wind-speed": Style --color=0xc0c0ff --font=medium-font --align-center,
+        "clock": Style --color=0xff2020 --font=big-font --align-center,
         "location": Style --color=0x909090 --font=small-font --align-center,
       }
 
@@ -172,6 +178,9 @@ get-weather client/http.Client -> Weather:
       --query_parameters=parameters
       --headers=headers
   data := json.decode-stream response.body
+  if response.status-code != 200:
+    print data
+    exit 1
   sun := solar-position Time.now LONGITUDE LATITUDE
 
   code/int := data["weather"][0]["id"]
