@@ -1,1 +1,1 @@
-API-KEY ::= "1ee803c255532ac2f21e5c47895239a0"
+API-KEY ::= "add your API key here"
