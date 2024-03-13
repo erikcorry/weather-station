@@ -1,14 +1,21 @@
-sdk: ^2.0.0-alpha.121
+sdk: ^2.0.0-alpha.128
 prefixes:
   certificate_roots: toit-cert-roots
   color_tft: toit-color-tft
+  host: pkg-host
   http: pkg-http
   ntp: pkg-ntp
   pixel_display: toit-pixel-display
+  png_display: toit-png-display
   roboto: toit-font-google-100dpi-roboto
   solar_position: toit-solar-position
   weather_icons: toit-weather-icons
 packages:
+  pkg-host:
+    url: github.com/toitlang/pkg-host
+    name: host
+    version: 1.14.1
+    hash: da453fb59f7ef3d37f39e4b438495f7c16614733
   pkg-http:
     url: github.com/toitlang/pkg-http
     name: http
@@ -43,6 +50,13 @@ packages:
     hash: e755a89af96afa2d7ef42a158e502e040f790997
     prefixes:
       png-tools: toit-png-tools
+  toit-png-display:
+    url: github.com/toitware/toit-png-display
+    name: png_display
+    version: 1.0.0
+    hash: d3d28acbb65ce0ebae0476751d0dd03e03926a15
+    prefixes:
+      pixel_display: toit-pixel-display
   toit-png-tools:
     url: github.com/toitware/toit-png-tools
     name: png-tools

@@ -5,6 +5,9 @@ dependencies:
   color_tft:
     url: github.com/toitware/toit-color-tft
     version: ^2.0.0
+  host:
+    url: github.com/toitlang/pkg-host
+    version: ^1.14.1
   http:
     url: github.com/toitlang/pkg-http
     version: ^2.4.0
@@ -14,6 +17,9 @@ dependencies:
   pixel_display:
     url: github.com/toitware/toit-pixel-display
     version: ^2.5.0
+  png_display:
+    url: github.com/toitware/toit-png-display
+    version: ^1.0.0
   roboto:
     url: github.com/toitware/toit-font-google-100dpi-roboto
     version: ^1.2.0
