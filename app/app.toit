@@ -9,6 +9,7 @@ import encoding.url
 import esp32
 import fixed-point show FixedPoint
 import font show Font
+import host.file
 import http
 import net
 import ntp
@@ -16,6 +17,7 @@ import pixel-display show *
 import pixel-display.gradient show GradientSpecifier GradientBackground
 import pixel-display.png show Png
 import pixel-display.true-color show get-rgb
+import png-display
 import solar-position show *
 import weather-icons.png-112.all show *
 import roboto.black-40 as big
@@ -38,7 +40,11 @@ main:
   client := http.Client.tls network //--root-certificates=[certificate-roots.USERTRUST_RSA_CERTIFICATION_AUTHORITY]
 
   display := null
+  driver := null
   catch --trace: display = get-display M5-STACK-24-BIT-LANDSCAPE-SETTINGS
+  if not display:
+    driver = png-display.TrueColorPngDriver 320 240
+    display = PixelDisplay.true-color driver
 
   bg := GradientBackground --angle=-30 --specifiers=[
       GradientSpecifier --color=0x9090e0 0,
@@ -122,20 +128,24 @@ main:
       location.text = weather.name
       weather-description.text = weather.text
     if first:
-      draw display clock
+      draw display driver clock
       first = false
     else:
       30.repeat: | i |
-        draw display clock
+        draw display driver clock
         sleep --ms=20_000
 
-draw display/PixelDisplay? clock/Label:
+draw display/PixelDisplay? driver clock/Label:
   now := Time.now.local
   clock.text = "$(%02d now.h):$(%02d now.m)"
   if display:
     before := system.process-stats
     d := Duration.of:
-      display.draw
+      if driver:
+        fd := file.Stream.for-write "out.png"
+        png-display.write-to fd driver display
+      else:
+        display.draw
     after := system.process-stats
     gc := after[system.STATS-INDEX-GC-COUNT] - before[system.STATS-INDEX-GC-COUNT]
     full-gc := after[system.STATS-INDEX-FULL-GC-COUNT] - before[system.STATS-INDEX-FULL-GC-COUNT]
@@ -164,6 +174,7 @@ class Weather:
     icon = code-to-icon code (not sun.night) dry-temp
 
 get-weather client/http.Client -> Weather:
+  /*
   headers := http.Headers
   parameters := {
     "lat": LATITUDE,
@@ -181,21 +192,24 @@ get-weather client/http.Client -> Weather:
   if response.status-code != 200:
     print data
     exit 1
+  */
   sun := solar-position Time.now LONGITUDE LATITUDE
 
-  code/int := data["weather"][0]["id"]
-  text/string := data["weather"][0]["main"]
-  dry-temp := data["main"]["temp"]
-  wind-speed := data["wind"]["speed"]
-  wind-direction := data["wind"]["deg"]
-  cloud-cover := data["clouds"]["all"]
+  code/int := 803
+  text/string := "cloudy"
+  dry-temp := 4.3
+  wind-speed := 2.3
+  wind-direction := 20
+  cloud-cover := 85
   print "$text, $(round dry-temp)°C, $(round wind-speed)m/s, $wind-direction°, clouds $cloud-cover%"
 
+  /*
   time-offset := data["timezone"] / 3600
   if time-offset > 0:
     set-timezone "UTC-$time-offset"
   else:
     set-timezone "UTC+$(-time-offset)"
+  */
 
   print Time.now.local
 
@@ -207,7 +221,7 @@ get-weather client/http.Client -> Weather:
       --wind-speed=wind-speed
       --wind-direction=wind-direction
       --cloud-cover=cloud-cover
-      --name=data["name"]
+      --name="Tranbjerg"
 
 round value/num -> string:
   return (FixedPoint --decimals=1 value).stringify
