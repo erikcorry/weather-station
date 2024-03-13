@@ -27,11 +27,11 @@ main:
 
   // These parameters will be encoded with the ?..&..& syntax.
   parameters := {
-    "lat": LATITUDE,
-    "lon": LONGITUDE,
-    "appid": API-KEY,
-    "units": "metric",
-    "exclude": "minutely,hourly,daily,alerts",
+      "lat": LATITUDE,
+      "lon": LONGITUDE,
+      "appid": API-KEY,
+      "units": "metric",
+      "exclude": "minutely,hourly,daily,alerts",
   }
 
   // A GET request for the current weather.
@@ -50,7 +50,7 @@ set-time-from-net:
   if now.year < 1981:
     result ::= ntp.synchronize
     if result:
-      catch --trace: esp32.adjust-real-time-clock result.adjustment
+      esp32.adjust-real-time-clock result.adjustment
       print "Set time to $Time.now by adjusting $result.adjustment"
     else:
       print "ntp: synchronization request failed"
