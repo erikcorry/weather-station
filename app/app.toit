@@ -1,25 +1,27 @@
 import certificate-roots
-import color-tft
 import encoding.json
-import encoding.url
-import fixed-point show FixedPoint
+import esp32
 import http
 import net
-import pixel-display
-import solar-position show *
-import weather-icons.png-112.all show *
+import ntp
 
-import .api-key
+API-KEY ::= "YOUR API KEY HERE"
 
+// Insert your location here.
 LONGITUDE ::= 10.1337
 LATITUDE ::= 56.09
 
 main:
+  // Make sure we accept the common TLS certificates used by servers.
   certificate-roots.install-common-trusted-roots
+  // Open the default network.
   network := net.open
+  // Set time from NTP.
+  set-time-from-net
+  // Create an HTTP client that uses TLS for security.
   client := http.Client.tls network
-  headers := http.Headers
-  headers.add "X-Gravitee-Api-Key" API-KEY
+
+  // These parameters will be encoded with the ?..&..& syntax.
   parameters := {
     "lat": LATITUDE,
     "lon": LONGITUDE,
@@ -27,79 +29,49 @@ main:
     "units": "metric",
     "exclude": "minutely,hourly,daily,alerts",
   }
+
+  // A GET request for the current weather.
   response/http.Response := client.get
       --host="api.openweathermap.org"
       --path="/data/2.5/weather"
       --query_parameters=parameters
-      --headers=headers
+  // Decode the JSON into a map object.
   data := json.decode-stream response.body
-  sun := solar-position Time.now LONGITUDE LATITUDE
+  // Dump the decoded JSON on the terminal or serial port.
+  pretty-print data
 
-  code/int := data["weather"][0]["id"]
-  text/string := data["weather"][0]["main"]
-  dry-temp := data["main"]["temp"]
-  wind-speed := data["wind"]["speed"]
-  wind-direction := data["wind"]["deg"]
-  cloud-cover := data["clouds"]["all"]
-  icon := code-to-icon code (not sun.night) dry-temp
-
-  print data
-
-  print "$text, $(round dry-temp)°C, $(round wind-speed)m/s, $wind-direction°, clouds $cloud-cover%"
-
-round value/num -> string:
-  return (FixedPoint --decimals=1 value).stringify
-
-code-to-icon code/int day/bool temp/num -> ByteArray?:
-  if 200 <= code < 300:
-    // Thunderstorm.
-    if temp > 0:
-      return day ? DAY-THUNDERSTORM : NIGHT-THUNDERSTORM
+// Call this once from the main function:
+set-time-from-net:
+  now := Time.now.utc
+  if now.year < 1981:
+    result ::= ntp.synchronize
+    if result:
+      catch --trace: esp32.adjust-real-time-clock result.adjustment
+      print "Set time to $Time.now by adjusting $result.adjustment"
     else:
-      return day ? DAY-SNOW-THUNDERSTORM : NIGHT-SNOW-THUNDERSTORM
-  else if 300 <= code < 313:
-    // Drizzle, no shower.
-    return day ? DAY-RAIN : NIGHT-RAIN
-  else if 313 <= code < 400:
-    // Drizzle, showers.
-    return day ? DAY-SHOWERS : NIGHT-SHOWERS
-  else if 500 <= code < 520:
-    // Rain, no shower.
-    return day ? DAY-RAIN : NIGHT-RAIN
-  else if 520 <= code < 600 or code == 771:
-    // Rain, showers, or squalls.
-    return day ? DAY-SHOWERS : NIGHT-SHOWERS
-  else if 600 <= code < 610:
-    // Snow.
-    return day ? DAY-SNOW : NIGHT-SNOW
-  else if 610 <= code < 620:
-    // Sleet.
-    return day ? DAY-SLEET : NIGHT-SLEET
-  else if 620 <= code < 700:
-    // Snow with showers.
-    return day ? DAY-SNOW : NIGHT-SNOW
-  else if code == 721 and day:
-    return DAY-HAZE
-  else if code == 701 or code == 741 or code == 721:
-    // Mist or fog or haze.
-    return day ? DAY-FOG : NIGHT-FOG
-  else if code == 711:
-    return SMOKE
-  else if code == 731 or code == 761:
-    return DUST
-  else if code == 751:
-    return SANDSTORM
-  else if code == 762:
-    // Volcanic ash.
-    return VOLCANO
-  else if code == 781:
-    return TORNADO
-  else if code == 800:
-    return day ? DAY-SUNNY : NIGHT-CLEAR
-  else if code == 801 or code == 802:
-    // 11-25% cloudy or 25-50% cloudy.
-    return day ? DAY-CLOUDY : NIGHT-PARTLY-CLOUDY
-  else if code == 803 or code == 804:
-    // 50-84% cloudy or 85-100% cloudy.
-    return day ? DAY-CLOUDY : NIGHT-CLOUDY
-  return null
+      print "ntp: synchronization request failed"
+
+/// Simple pretty-printer for JSON-compatible objects (maps, lists, strings,
+///   numbers, booleans, and null).
+pretty-print data --indent/string="" --prefix/string?=null --suffix/string?="" -> none:
+  str := json.stringify data
+  if str.size < 80:
+    print "$(prefix or indent)$str$suffix"
+    return
+  if data is Map:
+    print "$(prefix or indent){"
+    i := 0
+    data.do: | key value |
+      suffix2 := i == data.size - 1 ? null : ","
+      pretty-print value --indent="$indent  " --prefix="$indent  \"$key\": " --suffix=suffix2
+      i++
+    print "$indent}$suffix"
+  else if data is List:
+    print "$(prefix or indent)["
+    for i := 0; i < data.size; i++:
+      value := data[i]
+      suffix2 := i == data.size - 1 ? null : ","
+      pretty-print value --indent="$indent  " --suffix=suffix2
+    print "$indent]$suffix"
+  else:
+    print "$(prefix or indent)$str$suffix" 
