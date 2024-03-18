@@ -13,13 +13,12 @@ import http
 import net
 import ntp
 import pixel-display show *
-import pixel-display.gradient show GradientSpecifier GradientBackground
 import pixel-display.png show Png
 import pixel-display.true-color show get-rgb
 import solar-position show *
 import weather-icons.png-112.all show *
-import roboto.black-40 as big
-import roboto.light-40 as medium
+import roboto.black-italic-40 as big
+import roboto.medium-40 as medium
 import roboto.medium-20 as small
 
 import system
@@ -27,26 +26,21 @@ import system
 import .api-key
 import .get-display
 
-// Tranbjerg.
-LONGITUDE ::= 10.1337
-LATITUDE ::= 56.09
+// Aarhus.
+LATITUDE := 56.15
+LONGITUDE := 10.20
 
 main:
   certificate-roots.install-common-trusted-roots
   network := net.open
   set-time-from-net
-  client := http.Client.tls network //--root-certificates=[certificate-roots.USERTRUST_RSA_CERTIFICATION_AUTHORITY]
+  client := http.Client.tls network
 
   display := null
   catch --trace: display = get-display M5-STACK-24-BIT-LANDSCAPE-SETTINGS
 
-  bg := GradientBackground --angle=-30 --specifiers=[
-      GradientSpecifier --color=0x9090e0 0,
-      GradientSpecifier --color=0xf0f0f0 100,
-  ]
-
   ui :=
-      Div --x=0 --y=0 --w=320 --h=240 --background=bg [
+      Div --x=0 --y=0 --w=320 --h=240 --background=0x000030 [
           Div.clipping --classes=["button"] --x=10 --y=10 --w=150 --h=70 [
               Label --x=75 --y=50 --id="temperature-label",
           ],
@@ -74,22 +68,17 @@ main:
   clock := ui.get-element-by-id "clock"
   location := ui.get-element-by-id "location"
 
-  button-background := GradientBackground --angle=-30 --specifiers=[
-      GradientSpecifier --color=0xf0f0f0 0,
-      GradientSpecifier --color=0xa0a0a0 100,
-  ]
-
   style := Style
       --class-map = {
-        "button": Style --background=button-background --border=(ShadowRoundedCornerBorder --radius=10),
+        "button": Style --background=0xc0c0c0 --border=(RoundedCornerBorder --radius=10),
       }
       --id-map = {
         "temperature-label": Style --color=0 --font=medium-font --align-center,
         "weather-icon": Style --color=0xffdf80,
         "weather-description": Style --color=0xffdf80 --font=small-font,
-        "wind-direction": Style --color=0xc0c0ff,
-        "wind-speed": Style --color=0xc0c0ff --font=medium-font --align-center,
-        "clock": Style --color=0xff2020 --font=big-font --align-center,
+        "wind-direction": Style --color=0x4040df,
+        "wind-speed": Style --color=0x4040df --font=medium-font --align-center,
+        "clock": Style --color=0xcf0000 --font=big-font --align-center,
         "location": Style --color=0x909090 --font=small-font --align-center,
       }
 
@@ -100,16 +89,18 @@ main:
   code/int? := null
   wind-direction/int := -1
 
-  first := true
+  draw display clock
+
   while true:
     catch --trace:
-      weather := get-weather client
-      if (not first) and code != weather.code:
-        code = weather.code
-        png-file := weather.icon
-        weather-icon.png-file = png-file
-      if wind-direction != weather.wind-direction:
-        wind-direction = weather.wind-direction
+      weather := get-weather client LATITUDE LONGITUDE
+      code = weather.code
+      png-file := weather.icon
+      weather-icon.png-file = png-file
+      new-wind-direction := weather.wind-direction
+      if weather.wind-speed == 0: new-wind-direction = -1
+      if wind-direction != new-wind-direction:
+        wind-direction = new-wind-direction
         wind-direction-icon.png-file = direction-to-icon wind-direction
       temp := weather.dry-temp
       temperature-label.text = "$(round temp)°C"
@@ -121,10 +112,6 @@ main:
       wind-speed.text = "$(weather.wind-speed.to-int)m/s"
       location.text = weather.name
       weather-description.text = weather.text
-    if first:
-      draw display clock
-      first = false
-    else:
       30.repeat: | i |
         draw display clock
         sleep --ms=20_000
@@ -163,11 +150,12 @@ class Weather:
       --.name="":
     icon = code-to-icon code (not sun.night) dry-temp
 
-get-weather client/http.Client -> Weather:
+get-weather client/http.Client latitude/num longitude/num -> Weather:
+  print "Fetching weather for $latitude, $longitude"
   headers := http.Headers
   parameters := {
-    "lat": LATITUDE,
-    "lon": LONGITUDE,
+    "lat": latitude,
+    "lon": longitude,
     "appid": API-KEY,
     "units": "metric",
     "exclude": "minutely,hourly,daily,alerts",
@@ -181,7 +169,7 @@ get-weather client/http.Client -> Weather:
   if response.status-code != 200:
     print data
     exit 1
-  sun := solar-position Time.now LONGITUDE LATITUDE
+  sun := solar-position Time.now longitude latitude
 
   code/int := data["weather"][0]["id"]
   text/string := data["weather"][0]["main"]
