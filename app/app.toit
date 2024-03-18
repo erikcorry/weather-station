@@ -119,15 +119,7 @@ main:
 draw display/PixelDisplay? clock/Label:
   now := Time.now.local
   clock.text = "$(%02d now.h):$(%02d now.m)"
-  if display:
-    before := system.process-stats
-    d := Duration.of:
-      display.draw
-    after := system.process-stats
-    gc := after[system.STATS-INDEX-GC-COUNT] - before[system.STATS-INDEX-GC-COUNT]
-    full-gc := after[system.STATS-INDEX-FULL-GC-COUNT] - before[system.STATS-INDEX-FULL-GC-COUNT]
-    compact := after[system.STATS-INDEX-FULL-COMPACTING-GC-COUNT] - before[system.STATS-INDEX-FULL-COMPACTING-GC-COUNT]
-    //print "Took $d to draw, $gc scavenges, $full-gc full GCs, of those $compact compacting."
+  if display: display.draw
 
 class Weather:
   code/int
@@ -151,7 +143,6 @@ class Weather:
     icon = code-to-icon code (not sun.night) dry-temp
 
 get-weather client/http.Client latitude/num longitude/num -> Weather:
-  print "Fetching weather for $latitude, $longitude"
   headers := http.Headers
   parameters := {
     "lat": latitude,
@@ -275,3 +266,5 @@ set-time-from-net:
       print "Set time to $Time.now by adjusting $result.adjustment"
     else:
       print "ntp: synchronization request failed"
+
+// SolidBorder --width=5
